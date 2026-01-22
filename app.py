@@ -1,48 +1,61 @@
 import streamlit as st
 from transformers import pipeline
-import torch
+import pandas as pd
 
-st.set_page_config(
-    page_title="AI Sentiment Analyzer",
-    page_icon="💭",
-    layout="wide"
-)
+st.set_page_config(page_title="Advanced AI Sentiment Analyzer", page_icon="💭", layout="wide")
 
 @st.cache_resource
-def load_model():
-    return pipeline("sentiment-analysis")
+def load_models():
+    sentiment = pipeline("sentiment-analysis", return_all_scores=True)
+    zero_shot = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+    emotion = pipeline("text-classification", model="bhadresh-savani/distilbert-base-uncased-emotion")
+    return sentiment, zero_shot, emotion
 
-st.title("💭 AI Sentiment Analysis Dashboard")
-st.markdown("Analyze text sentiment with Hugging Face Transformers. Demo for Python/AI skills.")
+sentiment_pipe, zero_pipe, emotion_pipe = load_models()
 
-model = load_model()
+st.title("💭 Advanced AI NLP Analyzer")
+st.markdown("Sentiment + Tone + Emotions + Summary. Updated for multi-label analysis.")
 
-col1, col2 = st.columns([3, 1])
-with col1:
-    text = st.text_area("Enter text:", height=200, help="Paste reviews, tweets, etc.")
-with col2:
-    st.markdown("### Batch")
-    texts = st.text_area("Multi-text (\n separated):", height=200)
+tab1, tab2, tab3, tab4 = st.tabs(["Sentiment", "Custom Tone", "Emotions", "Summary"])
 
-if st.button("🔍 Analyze", type="primary") and text:
-    with st.spinner("Processing..."):
-        result = model(text)[0]
-        label = result["label"].title()
-        score = result["score"] * 100
-        st.balloons()
-        st.success(f"**{label}** sentiment ({score:.1f}% confidence)")
-        st.metric("Confidence", f"{score:.1f}%")
+with tab1:
+    text = st.text_area("Text:", height=200)
+    if st.button("Analyze Sentiment", type="primary") and text:
+        results = sentiment_pipe(text)[0]
+        df = pd.DataFrame(results)
+        st.dataframe(df.style.format({"score": "{:.1%}"}), use_container_width=True)
+        best = max(results, key=lambda x: x['score'])
+        st.success(f"**{best['label']}** ({best['score']:.1%})")
 
-if st.button("📊 Batch Analyze") and texts.strip():
-    batch = [t.strip() for t in texts.split("\n") if t.strip()]
-    if batch:
-        results = model(batch)
-        import pandas as pd
-        df_data = [{"Text": batch[i][:80]+"..." if len(batch[i])>80 else batch[i], 
-                    "Sentiment": r["label"].title(), 
-                    "Confidence": f"{r["score"]*100:.1f}%"} 
-                   for i, r in enumerate(results)]
-        st.dataframe(pd.DataFrame(df_data))
+with tab2:
+    text2 = st.text_area("Text for tone:", height=200)
+    tones = st.text_input("Custom tones (comma-separated):", "joyful,sarcastic,neutral,angry,excited")
+    tones = [t.strip() for t in tones.split(",")]
+    if st.button("Detect Tone") and text2 and tones:
+        result = zero_pipe(text2, candidate_labels=tones, multi_label=True)
+        df_tone = pd.DataFrame({"Tone": result['labels'], "Score": [f"{s:.1%}" for s in result['scores']]})
+        st.bar_chart(df_tone.set_index('Tone')['Score'].map(lambda x: float(x.strip('%'))/100))
+        st.dataframe(df_tone)
+
+with tab3:
+    text3 = st.text_area("Text for emotions:", height=200)
+    if st.button("Detect Emotions") and text3:
+        results = emotion_pipe(text3)
+        df_em = pd.DataFrame([r for r in results])
+        st.dataframe(df_em.style.format({"score": "{:.1%}"}), use_container_width=True)
+        top_em = max(results, key=lambda x: x['score'])
+        st.success(f"**Dominant Emotion**: {top_em['label'].upper()} ({top_em['score']:.1%})")
+
+with tab4:
+    from transformers import pipeline
+    @st.cache_resource
+    def load_summarizer():
+        return pipeline("summarization")
+    summarizer = load_summarizer()
+    text4 = st.text_area("Long text to summarize:", height=250)
+    if st.button("Summarize") and text4:
+        summary = summarizer(text4, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
+        st.write("**Summary**:", summary)
 
 st.markdown("---")
-st.caption("Production-ready | GitHub deploy to Streamlit Cloud | #Python #AI #Streamlit")
+st.caption("Enhanced: Zero-shot tones, 6 emotions, summarization. Deployed live!")
