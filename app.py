@@ -71,7 +71,7 @@ with st.sidebar:
     st.write("- **Zero-shot classification**")
     st.write("- **Streamlit tabs + caching**")
     st.write("- **Pandas + viz**")
-    st.markdown("[Source GitHub](https://github.com/YOURUSERNAME/sentiment-ai-dashboard)")
+    st.markdown("[Source GitHub](https://github.com/sumeetj/sentiment-ai-dashboard)")
 
 st.markdown("---")
 st.caption("🤖 Advanced NLP Analysis Tool | Powered by Hugging Face Transformers")
