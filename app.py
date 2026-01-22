@@ -2,7 +2,7 @@ import streamlit as st
 from transformers import pipeline
 import pandas as pd
 
-st.set_page_config(page_title="🤖 AI NLP Analyzer Pro", page_icon="💭", layout="wide")
+st.set_page_config(page_title="🤖 AI Sentiment Analyzer", page_icon="💭", layout="wide")
 
 @st.cache_resource
 def load_pipelines():
