@@ -1,18 +1,17 @@
-# AI Sentiment Analysis Dashboard
+# AI NLP Analyzer Pro
 
-Production-ready Streamlit app showcasing Python + Hugging Face Transformers for NLP.
+Production Streamlit app demoing:
+- Sentiment analysis (Twitter RoBERTa)
+- Zero-shot tone classification (BART MNLI) 
+- Emotion detection (DistilRoBERTa)
 
-## Quick Deploy
-1. Fork this repo.
-2. Streamlit Cloud: share.streamlit.io > New app > Your repo.
-3. Live in 2 mins!
+## Deploy
+1. Fork repo
+2. Streamlit Cloud → New app → Select repo → app.py
+3. Live in 60s!
 
 ## Local
+```bash
 pip install -r requirements.txt
 streamlit run app.py
-
-## Skills
-- Transformers pipeline
-- Streamlit caching/UI
-- Pandas for batch results
-- Torch acceleration
+```

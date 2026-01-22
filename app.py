@@ -2,63 +2,78 @@ import streamlit as st
 from transformers import pipeline
 import pandas as pd
 
-st.set_page_config(page_title="Advanced AI NLP Analyzer", page_icon="💭", layout="wide")
+st.set_page_config(page_title="🤖 AI NLP Analyzer Pro", page_icon="💭", layout="wide")
 
 @st.cache_resource
-def load_models():
-    sentiment = pipeline("sentiment-analysis", 
-                        model="distilbert-base-uncased-finetuned-sst-2-english", 
-                        top_k=None)
-    zero_shot = pipeline("zero-shot-classification", 
-                        model="facebook/bart-large-mnli")
-    emotion = pipeline("text-classification", 
-                      model="bhadresh-savani/distilbert-base-uncased-emotion")
-    summarizer = pipeline("summarization", 
-                         model="sshleifer/distilbart-cnn-12-6")
-    return sentiment, zero_shot, emotion, summarizer
+def load_pipelines():
+    return {
+        "sentiment": pipeline("sentiment-analysis", 
+                             model="cardiffnlp/twitter-roberta-base-sentiment-latest", 
+                             top_k=3),
+        "zero_shot": pipeline("zero-shot-classification", 
+                             model="facebook/bart-large-mnli"),
+        "emotion": pipeline("text-classification", 
+                           model="j-hartmann/emotion-english-distilroberta-base")
+    }
 
-sentiment_pipe, zero_pipe, emotion_pipe, summarizer = load_models()
+pipes = load_pipelines()
 
-st.title("💭 Advanced AI NLP Analyzer 🚀")
-st.markdown("Sentiment + Tones + Emotions + Summary (Fixed tabs).")
+st.title("🤖 Production AI NLP Analyzer")
+st.markdown("*Sentiment · Custom Tones · Emotions* - Stable on Streamlit Cloud")
 
-tab1, tab2, tab3, tab4 = st.tabs(["1. Sentiment", "2. Custom Tone", "3. Emotions", "4. Summary"])
+tab1, tab2, tab3 = st.tabs(["📊 Sentiment", "🎯 Custom Tones", "😊 Emotions"])
 
 with tab1:
-    text = st.text_area("Enter text here:", height=200, key="text_sentiment")
-    if st.button("Analyze Sentiment", type="primary", key="btn_sentiment") and text:
-        results = sentiment_pipe(text)
-        df = pd.DataFrame([{"Label": r["label"], "Score": f"{r['score']:.1%}"} for r in results[0]])
-        st.dataframe(df, use_container_width=True)
-        best = max(results[0], key=lambda x: x['score'])
-        st.success(f"**{best['label']}** ({best['score']:.1%})")
+    text1 = st.text_area("Paste review/tweet:", key="sentiment_input", height=150, 
+                        placeholder="This product is amazing!")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Analyze Sentiment", type="primary", key="sentiment_btn"):
+            if text1:
+                res = pipes["sentiment"](text1)
+                df = pd.DataFrame(res[0])
+                df["score"] = df["score"].map("{:.1%}".format)
+                st.dataframe(df, use_container_width=True)
+                st.metric("Top Sentiment", df.iloc[0]["label"], f"{df.iloc[0]['score']}")
 
 with tab2:
-    text2 = st.text_area("Enter text for tones:", height=200, key="text_tone")
-    tones = st.text_input("Custom tones (comma-separated):", "joyful,sarcastic,neutral,angry,excited", key="input_tones")
-    tones_list = [t.strip() for t in tones.split(",")]
-    if st.button("Detect Tone", key="btn_tone") and text2 and tones_list:
-        result = zero_pipe(text2, candidate_labels=tones_list, multi_label=True)
-        df_tone = pd.DataFrame({"Tone": result['labels'][:5], "Score": [f"{s:.1%}" for s in result['scores'][:5]]})
-        st.bar_chart(df_tone.set_index('Tone')['Score'].str.rstrip('%').astype(float)/100)
-        st.dataframe(df_tone)
+    text2 = st.text_area("Paste text:", key="tone_input", height=150)
+    labels_str = st.text_input("Tone labels:", "positive,negative,neutral,joyful,angry,sarcastic", key="tone_labels")
+    labels = [l.strip() for l in labels_str.split(",")]
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Classify Tones", key="tone_btn"):
+            if text2 and labels:
+                res = pipes["zero_shot"](text2, candidate_labels=labels, multi_label=True)
+                tone_df = pd.DataFrame({
+                    "Tone": res["labels"][:6], 
+                    "Score": [f"{s:.1%}" for s in res["scores"][:6]]
+                })
+                st.bar_chart(tone_df.set_index("Tone")["Score"].str[:-1].astype(float)/100)
+                st.dataframe(tone_df)
 
 with tab3:
-    text3 = st.text_area("Enter text for emotions:", height=200, key="text_emotion")
-    if st.button("Detect Emotions", key="btn_emotion") and text3:
-        results = emotion_pipe(text3)
-        df_em = pd.DataFrame([{"Emotion": r["label"], "Score": f"{r['score']:.1%}"} for r in results])
-        st.dataframe(df_em, use_container_width=True)
-        top_em = max(results, key=lambda x: x['score'])
-        st.balloons()
-        st.success(f"**{top_em['label'].upper()}** ({top_em['score']:.1%})")
+    text3 = st.text_area("Paste text:", key="emotion_input", height=150)
+    if st.button("Detect Emotions", type="primary", key="emotion_btn"):
+        if text3:
+            res = pipes["emotion"](text3)
+            df_em = pd.DataFrame([{"Emotion": r["label"], "Score": f"{r['score']:.1%}"} for r in res])
+            df_em = df_em.sort_values("Score", ascending=False)
+            st.dataframe(df_em, use_container_width=True)
+            top = df_em.iloc[0]
+            st.balloons()
+            st.metric("Dominant Emotion", top["Emotion"], top["Score"])
 
-with tab4:
-    text4 = st.text_area("Long text to summarize:", height=250, key="text_summary")
-    if st.button("Generate Summary", key="btn_summary") and text4:
-        with st.spinner("Summarizing..."):
-            summary = summarizer(text4, max_length=100, min_length=20, do_sample=False)[0]['summary_text']
-            st.info(f"**Summary**: {summary}")
+# Sidebar skills showcase
+with st.sidebar:
+    st.markdown("### 🛠️ Tech Stack")
+    st.write("- **Transformers**: RoBERTa, BART, DistilRoBERTa")
+    st.write("- **Zero-shot classification**")
+    st.write("- **Streamlit tabs + caching**")
+    st.write("- **Pandas + viz**")
+    st.markdown("[Source GitHub](https://github.com/YOURUSERNAME/sentiment-ai-dashboard)")
 
 st.markdown("---")
-st.caption("✅ No duplicate IDs | Multi-model NLP demo | Live on Streamlit Cloud")
+st.markdown("## 🎯 Portfolio Ready")
+st.info("Live demo showcasing Python AI/NLP skills. Share on LinkedIn!")
+st.caption("Built with Perplexity AI assistance | Stable Jan 2026")
