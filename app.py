@@ -18,7 +18,7 @@ def load_pipelines():
 
 pipes = load_pipelines()
 
-st.title("🤖 Production AI NLP Analyzer")
+st.title("🤖 AI Sentiment Analyzer")
 st.markdown("*Sentiment · Custom Tones · Emotions* - Stable on Streamlit Cloud")
 
 tab1, tab2, tab3 = st.tabs(["📊 Sentiment", "🎯 Custom Tones", "😊 Emotions"])
