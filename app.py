@@ -74,6 +74,4 @@ with st.sidebar:
     st.markdown("[Source GitHub](https://github.com/YOURUSERNAME/sentiment-ai-dashboard)")
 
 st.markdown("---")
-st.markdown("## 🎯 Portfolio Ready")
-st.info("Live demo showcasing Python AI/NLP skills. Share on LinkedIn!")
-st.caption("Built with Perplexity AI assistance | Stable Jan 2026")
+st.caption("🤖 Advanced NLP Analysis Tool | Powered by Hugging Face Transformers")
