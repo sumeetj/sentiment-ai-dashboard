@@ -1,4 +1,4 @@
-# AI NLP Analyzer Pro
+# AI NLP Analyzer
 
 Production Streamlit app demoing:
 - Sentiment analysis (Twitter RoBERTa)
